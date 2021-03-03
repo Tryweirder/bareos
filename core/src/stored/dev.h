@@ -275,7 +275,7 @@ class Device {
   DeviceResource* device_resource{};   /**< Pointer to Device Resource */
   VolumeReservationItem* vol{};        /**< Pointer to Volume reservation item */
   btimer_t* tid{};            /**< Timer id */
-  int fd_{-1};                /**< File descriptor */
+  int fd{-1};                 /**< File descriptor */
 
   VolumeCatalogInfo VolCatInfo;       /**< Volume Catalog Information */
   Volume_Label VolHdr;                /**< Actual volume label */
@@ -319,7 +319,7 @@ class Device {
   }
   bool IsFifo() const { return dev_type == DeviceType::B_FIFO_DEV; }
   bool IsVtl() const { return dev_type == DeviceType::B_VTL_DEV; }
-  bool IsOpen() const { return fd_ >= 0; }
+  bool IsOpen() const { return fd >= 0; }
   bool IsOffline() const { return BitIsSet(ST_OFFLINE, state); }
   bool IsLabeled() const { return BitIsSet(ST_LABEL, state); }
   bool IsMounted() const { return BitIsSet(ST_MOUNTED, state); }
@@ -390,7 +390,7 @@ class Device {
   void clear_offline() { ClearBit(ST_OFFLINE, state); }
   void ClearEot() { ClearBit(ST_EOT, state); }
   void ClearEof() { ClearBit(ST_EOF, state); }
-  void ClearOpened() { fd_ = -1; }
+  void ClearOpened() { fd = -1; }
   void ClearMounted() { ClearBit(ST_MOUNTED, state); }
   void clear_media() { ClearBit(ST_MEDIA, state); }
   void ClearShortBlock() { ClearBit(ST_SHORT, state); }
