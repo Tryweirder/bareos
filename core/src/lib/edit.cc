@@ -244,8 +244,7 @@ static bool GetModifier(char* str,
 
   if (!Is_a_number(num)) { return false; }
 
-  std::string tmp(&str[mod_end]);
-  bstrncpy(str, tmp.c_str(), len);
+  bstrncpy(str, &str[mod_end], len);
   Dmsg2(900, "num=%s mod=%s\n", num, mod);
 
   return true;
