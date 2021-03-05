@@ -40,9 +40,19 @@ pidofproc() {
    fi
 
    # Finally try to extract it from ps
-   pid=`${PSCMD} | grep $1 | ${AWK} '{ print $1 }' | tr '\n' ' '`
+   pid=`${PSCMD} | grep $base | ${AWK} '{ print $1 }' | tr '\n' ' '`
    echo $pid
    return 0
+}
+
+checkPid()
+{
+    pid="$1"
+    if [ -z "$pid" ]; then
+        return 1
+    fi
+    ${PS} -p "$pid">/dev/null 2>&1
+    return $?
 }
 
 # A function to stop a program.
@@ -72,28 +82,28 @@ killproc() {
    # Kill it.
    if [ "$pid" != "" ] ; then
       if [ "$notset" = "1" ] ; then
-         if ${PS} -p "$pid">/dev/null 2>&1; then
+         if checkPid "$pid"; then
             # TERM first, then KILL if not dead
             kill -TERM $pid 2>/dev/null
             #sleep 0.1
-            if ${PS} -p "$pid" >/dev/null 2>&1 ; then
+            if checkPid "$pid"; then
                #sleep 0.1
-               if ${PS} -p "$pid" >/dev/null 2>&1 ; then
+               if checkPid "$pid"; then
                  #sleep 0.3
-                  if ${PS} -p "$pid" >/dev/null 2>&1 ; then
+                  if checkPid "$pid"; then
                      kill -KILL $pid 2>/dev/null
                   fi
                fi
             fi
          fi
          sleep 1
-         if ${PS} -p "$pid" >/dev/null 2>&1; then
+         if checkPid "$pid"; then
             success "$base shutdown"
          else
             failure "$base shutdown"
          fi
       else
-         if ${PS} -p "$pid" >/dev/null 2>&1; then
+         if checkPid "$pid"; then
             if kill $killlevel $pid 2>/dev/null; then
                 success "$base shutdown"
             else
@@ -126,7 +136,6 @@ checkcfg() {
 }
 
 status() {
-   pid=""
    # Test syntax.
    if [ $# = 0 ] ; then
       echo "Usage: status {program} {port}"
@@ -136,40 +145,17 @@ status() {
    # Get base program name
    base=`basename $1`
 
-   # First try "pidof"
-   if [ ! -z "${PIDOF}" -a -x "${PIDOF}" ] ; then
-      pid=`${PIDOF} $1`
-      if [ "$pid" != "" ] ; then
-         echo "$base (pid $pid) is running..."
-         return 0
-      fi
+   # Find pid.
+   pid=`pidofproc $base $2`
+
+   if checkPid "$pid"; then
+       echo "$base (pid $pid) is running..."
+       return 0
    fi
 
-   # Next try "pgrep"
-   if [ ! -z "${PGREP}" -a -x "${PGREP}" ] ; then
-      pid=`${PGREP} -f $base`
-      if [ "$pid" != "" ] ; then
-         echo "$base (pid $pid) is running..."
-         return 0
-      fi
-   fi
-
-   pid=`${PSCMD} | ${AWK} 'BEGIN { prog=ARGV[1]; ARGC=1 } \
-   { if ((prog == $2) || (("(" prog ")") == $2) ||        \
-      (("[" prog "]") == $2) ||                           \
-      ((prog ":") == $2)) { print $1 ; exit 0 } }' $1`
-   if [ "$pid" != "" ] ; then
-      echo "$base (pid $pid) is running..."
-      return 0
-   fi
-
-   # Next try the PID files
    if [ -f ${PIDDIR}/$base.$2.pid ] ; then
-      pid=`head -n 1 ${PIDDIR}/$base.$2.pid`
-      if [ "$pid" != "" ] ; then
-         echo "$base dead but pid file exists"
-         return 1
-      fi
+       echo "$base dead but pid file exists"
+       return 1
    fi
 
    # See if the subsys lock exists
@@ -177,6 +163,7 @@ status() {
       echo "$base dead but subsys locked"
       return 2
    fi
+
    echo "$base is stopped"
 
    return 3
