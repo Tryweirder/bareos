@@ -597,7 +597,6 @@ set(SYSTEM_TESTS_DISABLED # initially empty
 # during build in jenkins
 set(SYSTEM_TESTS_BROKEN
     config-dump
-    dbcopy-mysql-postgresql
     py2plug-fd-postgres
     py3plug-fd-local-fileset
     py3plug-fd-postgres
